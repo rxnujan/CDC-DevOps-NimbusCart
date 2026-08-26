@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NimbusCart</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 16px; }
+  h1 { color: #1a237e; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  th, td { border: 1px solid #ccc; padding: 8px 10px; text-align: left; }
+  th { background: #1a237e; color: #fff; }
+  form { margin-top: 24px; display: flex; gap: 8px; flex-wrap: wrap; }
+  input { padding: 6px; border: 1px solid #999; border-radius: 4px; }
+  button { padding: 6px 14px; background: #1a237e; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+  button:hover { background: #0d1457; }
+  #error { color: #b00020; margin-top: 12px; display: none; }
+</style>
+</head>
+<body>
+  <h1>NimbusCart</h1>
+  <p>Product catalog — three-tier demo app.</p>
+
+  <table id="items-table">
+    <thead>
+      <tr><th>Name</th><th>Price</th><th>Stock</th></tr>
+    </thead>
+    <tbody id="items-body"></tbody>
+  </table>
+
+  <div id="error"></div>
+
+  <h2>Add product</h2>
+  <form id="add-form">
+    <input type="text" id="name" placeholder="Name" required>
+    <input type="number" id="price" placeholder="Price" step="0.01" required>
+    <input type="number" id="stock" placeholder="Stock" required>
+    <button type="submit">Add</button>
+  </form>
+
+  <script>
+    const API_BASE = '/api';
+    const body = document.getElementById('items-body');
+    const errorBox = document.getElementById('error');
+
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.style.display = 'block';
+    }
+    function clearError() {
+      errorBox.style.display = 'none';
+    }
+
+    async function loadItems() {
+      try {
+        const res = await fetch(`${API_BASE}/items`);
+        if (!res.ok) throw new Error(`API returned ${res.status}`);
+        const items = await res.json();
+        body.innerHTML = '';
+        items.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${item.name}</td><td>${item.price}</td><td>${item.stock}</td>`;
+          body.appendChild(tr);
+        });
+        clearError();
+      } catch (err) {
+        showError('Failed to load products: ' + err.message);
+      }
+    }
+
+    document.getElementById('add-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('name').value,
+        price: parseFloat(document.getElementById('price').value),
+        stock: parseInt(document.getElementById('stock').value, 10)
+      };
+      try {
+        const res = await fetch(`${API_BASE}/items`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`API returned ${res.status}`);
+        e.target.reset();
+        await loadItems();
+      } catch (err) {
+        showError('Failed to add product: ' + err.message);
+      }
+    });
+
+    loadItems();
+  </script>
+</body>
+</html>
